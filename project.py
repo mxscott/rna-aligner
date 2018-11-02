@@ -12,6 +12,7 @@
 """
 
 import sys # DO NOT EDIT THIS
+import utils
 from shared import *
 
 ALPHABET = [TERMINATOR] + BASES
@@ -29,7 +30,12 @@ def get_suffix_array(s):
     >>> get_suffix_array('GATAGACA$')
     [8, 7, 5, 3, 1, 6, 4, 0, 2]
     """
-    pass
+    suffixes = utils.get_suffixes(s)
+    return [s[1] for s in suffixes if s is not None]
+
+
+
+
 
 def get_bwt(s, sa):
     """
@@ -40,7 +46,7 @@ def get_bwt(s, sa):
     Output:
         L: BWT of s as a string
     """
-    pass
+    return [s[i-1] for i in sa]
 
 def get_F(L):
     """
