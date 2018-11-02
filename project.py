@@ -13,6 +13,7 @@
 
 import sys # DO NOT EDIT THIS
 import utils
+from numpy import zeros
 from shared import *
 
 ALPHABET = [TERMINATOR] + BASES
@@ -33,10 +34,6 @@ def get_suffix_array(s):
     suffixes = utils.get_suffixes(s)
     return [s[1] for s in suffixes if s is not None]
 
-
-
-
-
 def get_bwt(s, sa):
     """
     Input:
@@ -54,7 +51,7 @@ def get_F(L):
 
     Output: F, first column in Pi_sorted
     """
-    pass
+    return ''.join(sorted(L))
 
 def get_M(F):
     """
@@ -63,7 +60,13 @@ def get_M(F):
 
     If a character "c" does not exist in F, you may set M[c] = -1
     """
-    pass
+    M = {}
+    for ch in ALPHABET:
+        try:
+            M[ch] = F.index(ch)
+        except ValueError:
+            M[ch] = -1
+    return M
 
 def get_occ(L):
     """
@@ -71,7 +74,19 @@ def get_occ(L):
     string character to a list of integers. If c is a string character and i is an integer, then OCC[c][i] gives
     the number of occurrences of character "c" in the bwt string up to and including index i
     """
-    pass
+    OCC = {ch: zeros(len(L), dtype=int) for ch in ALPHABET}
+    
+    for index in range(len(L)):
+        for let in range(len(ALPHABET)):
+
+            if L[index] == ALPHABET[let]:
+                is_same = 1
+            else:
+                is_same = 0    
+
+            OCC[ALPHABET[let]][index] = OCC[ALPHABET[let]][index-1] + is_same
+
+    return OCC        
 
 def exact_suffix_matches(p, M, occ):
     """
@@ -117,7 +132,7 @@ def exact_suffix_matches(p, M, occ):
     >>> exact_suffix_matches('AA', M, occ)
     ((1, 11), 1)
     """
-    pass
+    
 
 MIN_INTRON_SIZE = 20
 MAX_INTRON_SIZE = 10000
