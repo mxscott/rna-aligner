@@ -13,7 +13,7 @@
 
 import sys # DO NOT EDIT THIS
 import utils
-from numpy import zeros
+from numpy import zeros, ndarray
 from shared import *
 
 ALPHABET = [TERMINATOR] + BASES
@@ -32,6 +32,7 @@ def get_suffix_array(s):
     [8, 7, 5, 3, 1, 6, 4, 0, 2]
     """
     suffixes = utils.get_suffixes(s)
+    suffixes = utils.sort_suffixes(suffixes, 40)
     return [s[1] for s in suffixes if s is not None]
 
 def get_bwt(s, sa):
@@ -43,7 +44,10 @@ def get_bwt(s, sa):
     Output:
         L: BWT of s as a string
     """
-    return [s[i-1] for i in sa]
+    L = ''
+    for i in sa:
+        L += s[i-1]
+    return L
 
 def get_F(L):
     """
@@ -74,7 +78,7 @@ def get_occ(L):
     string character to a list of integers. If c is a string character and i is an integer, then OCC[c][i] gives
     the number of occurrences of character "c" in the bwt string up to and including index i
     """
-    OCC = {ch: zeros(len(L), dtype=int) for ch in ALPHABET}
+    OCC = {ch: ([0]*len(L)) for ch in ALPHABET}
     
     for index in range(len(L)):
         for let in range(len(ALPHABET)):
@@ -132,7 +136,40 @@ def exact_suffix_matches(p, M, occ):
     >>> exact_suffix_matches('AA', M, occ)
     ((1, 11), 1)
     """
-    
+    _length = 0
+    _range = None
+    i = len(p) - 1
+
+    sp = M[p[i]]
+    if sp == -1:
+        return (_range, _length)
+
+    ep = sp + occ[p[i]][-1] - 1
+    i -= 1
+    _length += 1
+    _range = (sp, ep)
+
+    while i >= 0 and sp <= ep:
+
+        x = (occ[p[i]][sp - 1])
+        y = (occ[p[i]][ep])
+
+        sp = (M[p[i]] + x)
+        ep = (M[p[i]] + y) - 1
+        
+        if sp > ep:
+            break
+        else:    
+            i -= 1
+            _length += 1
+            _range = (sp, ep)
+
+    _range = (_range[0], _range[1] + 1)
+
+
+    return (_range, _length)    
+
+      
 
 MIN_INTRON_SIZE = 20
 MAX_INTRON_SIZE = 10000

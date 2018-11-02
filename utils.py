@@ -17,8 +17,8 @@ def get_suffixes(s):
 
 def sort_suffixes(suffixes, depth):
     """
-    Sorts the given suffixes (tuple of the form (suffix:index)) using only the first depth
-    characters of each suffix. Sorted is the array to add sorted indices to.
+    Sorts the given suffixes (tuple of the form (suffix, index)) using only the first depth characters of each suffix. 
+    Returns a sorted list of tuples (suffix, index).
     The list of suffix indices will be sorted with the order ($, A, C, G, T)
     """
     if len(suffixes) == 0:
@@ -27,14 +27,18 @@ def sort_suffixes(suffixes, depth):
     if len(suffixes) == 1 or depth <= 0:
         return suffixes
 
-    #bins = {'$': [], 'A': [], 'C': [], 'G': [], 'T': []}
     bins = {c:[] for c in '$ACGT'}
     for s in suffixes:
         bins[s[0][0]] += [(s[0][1:], s[1])]
 
-    big_one = [sort_suffixes(bins[ch], depth-1) for ch in '$ACGT' if bins[ch] is not None]
+    #big_one = [sort_suffixes(bins[ch], depth-1) for ch in '$ACGT' if bins[ch] is not None]
+    
 
-    return big_one
+    return (sort_suffixes(bins['$'], depth-1) 
+        + sort_suffixes(bins['A'], depth-1) 
+        + sort_suffixes(bins['C'], depth-1) 
+        + sort_suffixes(bins['G'], depth-1) 
+        + sort_suffixes(bins['T'], depth-1))
     """
     (sort_suffixes(bins['$'], depth-1) 
         + sort_suffixes(bins['A'], depth-1) 

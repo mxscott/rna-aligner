@@ -1,16 +1,12 @@
 import utils
 from project import *
 
-stringg = 'ATCG$'
+string = 'CATCATA$'
+p = 'CAT'
 
-suf = utils.get_suffixes(stringg)
+M = get_M('$AAACCTT')
+
+occ = get_occ('ATCCT$AA')
 
 
-
-"""
-final = utils.sort_suffixes(suf, 4)
-#bomb = [s[1] for s in final if s is not None]
-for f in final:
-    print(f)
-"""    
-print(get_occ('ATG$AAAGTG'))    
+print(exact_suffix_matches(p, M, occ))
