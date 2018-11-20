@@ -33,7 +33,7 @@ def get_suffix_array(s):
     """
     suffixes = utils.get_suffixes(s)
     suffixes = utils.sort_suffixes(suffixes, 40)
-    return [s[1] for s in suffixes if s is not None]
+    return [suf[1] for suf in suffixes if suf is not None]
 
 def get_bwt(s, sa):
     """
