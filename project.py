@@ -194,7 +194,7 @@ class Aligner:
                 known_isos.add(iso)
         self.iso_dict = index_isoform_locations(known_isos, set())   #need to find a method that will help me convert transcriptome index to genome index
         
-        self.transcriptome = self.build_transcriptome(known_genes, genome_sequence)
+        self.transcriptome, self.index_dict = self.build_transcriptome(known_genes, genome_sequence)
         #print('Built transcriptome')
         sequence_to_search = self.transcriptome  # or genome_sequence?
 
@@ -242,6 +242,7 @@ class Aligner:
 
     def build_transcriptome(self, known_genes, genome_sequence):
         transcriptome = ''
+        index_dict = {}
         isoforms = {}
         seq = ''
         for g in known_genes:
@@ -249,9 +250,11 @@ class Aligner:
                 for e in i.exons:
                     segment = genome_sequence[e.start:e.end]
                     seq += segment
+                    for x in range(e.end - e.start):
+                        index_dict[(len(transcriptome) + x)] = e.start + x
                     transcriptome += segment
                 isoforms[i.id] = seq
                 seq = ''
                 transcriptome += '!' #Assuming reads can not span across isoforms so they are seperated with unique char
 
-        return transcriptome        
+        return transcriptome, index_dict

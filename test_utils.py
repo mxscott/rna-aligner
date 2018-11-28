@@ -12,9 +12,10 @@ iso_3 = shared.Isoform('3', [shared.Exon('2', 250, 400), shared.Exon('3', 700, 8
 iso_4 = shared.Isoform('4', [shared.Exon('4', 900, 1000)])
 
 gene1 = shared.Gene('1', [iso_1, iso_2, iso_3])
-gene2 = shared.Gene('2', [iso_4])
+gene2 = shared.Gene('2', [iso_1, iso_3])
+gene3 = shared.Gene('3', [iso_4])
 
-toy_genes = {gene1, gene2}
+toy_genes = {gene1, gene2, gene3}
 
 read = ''
 
@@ -32,7 +33,9 @@ end_construct = timer()
 
 
 print('Initialization took: ' + str(end_construct - start_construct) + ' seconds')
-print(aligner.iso_dict[101])
+
+
+print(aligner.index_dict[400])
 
 '''
 start_align = timer()
