@@ -15,6 +15,7 @@ import sys # DO NOT EDIT THIS
 import utils
 from numpy import zeros, ndarray
 from shared import *
+from evaluation import index_isoform_locations
 
 ALPHABET = [TERMINATOR] + BASES
 
@@ -32,7 +33,7 @@ def get_suffix_array(s):
     [8, 7, 5, 3, 1, 6, 4, 0, 2]
     """
     suffixes = utils.get_suffixes(s)
-    suffixes = utils.sort_suffixes(suffixes, 40)
+    suffixes.sort()
     return [suf[1] for suf in suffixes if suf is not None]
 
 def get_bwt(s, sa):
@@ -187,7 +188,24 @@ class Aligner:
                     so don't stress if you are close. Server is 1.25 times faster than the i7 CPU on my computer
 
         """
-        pass
+        known_isos = set()
+        for g in known_genes:
+            for iso in g.isoforms:
+                known_isos.add(iso)
+        self.iso_dict = index_isoform_locations(known_isos, set())   #need to find a method that will help me convert transcriptome index to genome index
+        
+        self.transcriptome = self.build_transcriptome(known_genes, genome_sequence)
+        #print('Built transcriptome')
+        sequence_to_search = self.transcriptome  # or genome_sequence?
+
+        self._sa = get_suffix_array(sequence_to_search + '$')
+        #print('Built SA')
+        self._bwt = get_bwt(sequence_to_search + '$', self._sa)
+        #print('Built BWT')
+        self._F = get_F(self._bwt)
+        self._M = get_M(self._F)
+        self._occ = get_occ(self._bwt)
+        #print('Built OCC matrix')
 
     def align(self, read_sequence):
         """
@@ -206,4 +224,34 @@ class Aligner:
 
         Time limit: 0.5 seconds per read on average on the provided data.
         """
-        pass
+        match_sequence = read_sequence
+        match_locations = []
+        matches = []
+        while len(match_sequence) > 0:
+            range_and_len = exact_suffix_matches(read_sequence, self._M, self._occ)
+            if range_and_len[0] == None:
+                match_sequence = match_sequence[:-1]
+
+                continue
+            
+            matches.append(match_sequence[-1 * range_and_len[1]:])
+            match_sequence = match_sequence[(len(match_sequence) - range_and_len[1]):]
+            
+            match_locations.append(self._sa[range_and_len[0][0]:range_and_len[0][1]])
+
+
+    def build_transcriptome(self, known_genes, genome_sequence):
+        transcriptome = ''
+        isoforms = {}
+        seq = ''
+        for g in known_genes:
+            for i in g.isoforms:
+                for e in i.exons:
+                    segment = genome_sequence[e.start:e.end]
+                    seq += segment
+                    transcriptome += segment
+                isoforms[i.id] = seq
+                seq = ''
+                transcriptome += '!' #Assuming reads can not span across isoforms so they are seperated with unique char
+
+        return transcriptome        
