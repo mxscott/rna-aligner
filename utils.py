@@ -3,7 +3,15 @@
 """
 import shared
 
+def get_edit_dist(s1, s2):
+    return sum(1 for a, b in zip(s1, s2) if a != b)
 
+def get_prefixes(s):
+    prefixes = []
+    for i in range(len(s)):
+        prefixes.append(s[:i])
+
+    return prefixes
 
 def get_suffixes(s):
     """
@@ -11,7 +19,7 @@ def get_suffixes(s):
     """
     suffixes = []
     for i in range(len(s)):
-        suffixes.append((s[i:(i+25)] + '$'*(i), i))
+        suffixes.append((s[i:(i+50)] + '$'*(i), i))
 
     return suffixes
 

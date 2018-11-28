@@ -17,7 +17,7 @@ gene3 = shared.Gene('3', [iso_4])
 
 toy_genes = {gene1, gene2, gene3}
 
-read = ''
+read = 'GATTTCTGAGAAACTTTTTTGTGA'
 
 """
 with open('genome.fa') as f:
@@ -34,10 +34,13 @@ end_construct = timer()
 
 print('Initialization took: ' + str(end_construct - start_construct) + ' seconds')
 
+#print(aligner.index_dict[100])
+#print(aligner.index_dict[350])
+#print(aligner.index_dict[1000])
 
-print(aligner.index_dict[400])
+#print(aligner.transcriptome)
 
-'''
+
 start_align = timer()
 alignment = aligner.align(read)
 end_align = timer()
@@ -45,4 +48,4 @@ end_align = timer()
 print('Alignment took: ' + str(end_align - start_align) + ' seconds')
 
 print(alignment)
-'''
+

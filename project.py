@@ -188,11 +188,6 @@ class Aligner:
                     so don't stress if you are close. Server is 1.25 times faster than the i7 CPU on my computer
 
         """
-        known_isos = set()
-        for g in known_genes:
-            for iso in g.isoforms:
-                known_isos.add(iso)
-        self.iso_dict = index_isoform_locations(known_isos, set())   #need to find a method that will help me convert transcriptome index to genome index
         
         self.transcriptome, self.index_dict = self.build_transcriptome(known_genes, genome_sequence)
         #print('Built transcriptome')
@@ -225,24 +220,80 @@ class Aligner:
         Time limit: 0.5 seconds per read on average on the provided data.
         """
         match_sequence = read_sequence
-        match_locations = []
-        matches = []
-        while len(match_sequence) > 0:
-            range_and_len = exact_suffix_matches(read_sequence, self._M, self._occ)
-            if range_and_len[0] == None:
-                match_sequence = match_sequence[:-1]
+        bases = {'A', 'C', 'G', 'T'}
+        best_len = 0
+        curr_length = 0
 
-                continue
+        range_and_len = exact_suffix_matches(match_sequence, self._M, self._occ)
+        rng, length = range_and_len
+        match_rng = rng
+        curr_length = length + 1
+
+        while curr_length < len(read_sequence):
             
-            matches.append(match_sequence[-1 * range_and_len[1]:])
-            match_sequence = match_sequence[(len(match_sequence) - range_and_len[1]):]
-            
-            match_locations.append(self._sa[range_and_len[0][0]:range_and_len[0][1]])
+            best_len = 0
+            swap_bases = bases.difference(match_sequence[-curr_length])
+            #print('$$$$')
+
+            for ch in swap_bases:
+                new_match = match_sequence[:-curr_length] + ch + match_sequence[-curr_length+1:]
+                #print(new_match)
+                rng, length = exact_suffix_matches(new_match, self._M, self._occ)
+                if length > best_len:
+                    match_sequence = new_match
+                    best_len = length
+                    match_rng = rng
+
+            curr_length = best_len + 1
+
+
+        return self.get_match_locations(read_sequence, match_sequence, self._sa[match_rng[0]])  #index is location in the transcriptome
+       
+
+
+    def get_match_locations(self, original, actual, index):
+        ctr = 0
+        previous = -2
+        match_locations = []
+        curr_match = (None, None, None)  #(read, ref, len)
+
+
+        for a,b in zip(original, actual):
+            #print(a, b)
+            if a == b:
+                ref_index = self.index_dict[index+ctr]
+                if curr_match[0] == None:
+                    curr_match = (ctr, ref_index, 1)
+                    #print(curr_match)
+                elif ref_index - previous != 1:
+                    #print('Jumped intron')
+                    match_locations.append(curr_match)
+                    curr_match = (ctr, ref_index, 1)
+                else:
+                    #print('Adding 1')
+                    curr_match = (curr_match[0], curr_match[1], curr_match[2] + 1)
+
+                previous = ref_index    
+
+            else:
+                match_locations.append(curr_match)
+                curr_match = (None, None, None)
+
+                previous = -2
+
+            ctr += 1
+
+        if curr_match[0] != None:
+            match_locations.append(curr_match)
+
+        return match_locations    
+             
 
 
     def build_transcriptome(self, known_genes, genome_sequence):
         transcriptome = ''
         index_dict = {}
+        length = 0
         isoforms = {}
         seq = ''
         for g in known_genes:
@@ -251,10 +302,11 @@ class Aligner:
                     segment = genome_sequence[e.start:e.end]
                     seq += segment
                     for x in range(e.end - e.start):
-                        index_dict[(len(transcriptome) + x)] = e.start + x
+                        index_dict[length + x] = e.start + x
                     transcriptome += segment
+                    length += len(segment)
                 isoforms[i.id] = seq
                 seq = ''
                 transcriptome += '!' #Assuming reads can not span across isoforms so they are seperated with unique char
-
+                length += 1
         return transcriptome, index_dict
