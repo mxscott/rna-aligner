@@ -219,36 +219,84 @@ class Aligner:
 
         Time limit: 0.5 seconds per read on average on the provided data.
         """
-        match_sequence = read_sequence
-        bases = {'A', 'C', 'G', 'T'}
-        best_len = 0
-        curr_length = 0
+        
+        match_sequence, curr_length, match_rng = self.substitute_base(read_sequence, 0, set())
 
-        range_and_len = exact_suffix_matches(match_sequence, self._M, self._occ)
-        rng, length = range_and_len
-        match_rng = rng
-        curr_length = length + 1
+        matched_length = curr_length
 
-        while curr_length < len(read_sequence):
+        if curr_length < len(read_sequence):
+            tested_bases = {match_sequence[-curr_length], read_sequence[-curr_length]}
+
+        ctr = 0
+        
+        while curr_length < len(match_sequence) and curr_length > -1 and ctr < 20:
+            ctr += 1
+
+            if curr_length != matched_length:
+                tested_bases = {match_sequence[-curr_length], read_sequence[-curr_length]}
+                matched_length = curr_length
+            else:
+                tested_bases.add(match_sequence[-curr_length]) 
             
-            best_len = 0
-            swap_bases = bases.difference(match_sequence[-curr_length])
-            #print('$$$$')
+            print('------------------BACKTRACK-----------------------')
+            print(curr_length)
+            print(tested_bases)
+            match_sequence, curr_length, match_rng = self.substitute_base(read_sequence, 0, tested_bases)
 
+        print('Final Match!: ')
+        if match_rng == None:
+            return []
+        return self.get_match_locations(read_sequence, match_sequence, self._sa[match_rng[0]])  #match_rng is location in the SA
+       
+    def substitute_base(self, match_sequence, matched_length, tested_bases):
+
+        bases = {'A', 'C', 'G', 'T'}
+        initial_seq = match_sequence
+        lens = set()
+        best_len = matched_length
+        rng, length = exact_suffix_matches(match_sequence, self._M, self._occ)
+        match_rng = rng
+        curr_length = length
+        num_subs = 0 #may change (awkward backtrack method is too complex)
+        while curr_length < len(match_sequence):
+
+            if num_subs > 6:
+                print("TOO MANY SUBS")
+                return initial_seq, max(best_len-1, 0), None
+
+            num_subs += 1
+            lens.clear()    
+            best_len = 0
+            print(match_sequence[-(curr_length+1)])
+            swap_bases = bases.difference(match_sequence[-(curr_length+1)]) #do not retest the base that is currently causing a mismatch
+            swap_bases = swap_bases.difference(tested_bases)    #remove bases we have already tried from set of possible substitutions
+            print('Bases to test: ' + str(swap_bases))
+            tested_bases.clear()
+
+            print('$$$$')
+            
+            
             for ch in swap_bases:
-                new_match = match_sequence[:-curr_length] + ch + match_sequence[-curr_length+1:]
-                #print(new_match)
+                new_match = match_sequence[:-(curr_length+1)] + ch + match_sequence[-(curr_length+1)+1:]
+                print(new_match)
                 rng, length = exact_suffix_matches(new_match, self._M, self._occ)
-                if length > best_len:
+                print(length)
+                lens.add(length)
+                if length > best_len:   #Selecting next match based on longest length, is there a better way?
                     match_sequence = new_match
                     best_len = length
                     match_rng = rng
 
-            curr_length = best_len + 1
+            #Test if align is stuck and return proper data
+            if len(lens) == 1:
+                print('GOT STUCK')
+                curr_length = max(0, best_len-2)
+                match_sequence = initial_seq
+                break
+                
+            curr_length = best_len    
 
-
-        return self.get_match_locations(read_sequence, match_sequence, self._sa[match_rng[0]])  #index is location in the transcriptome
-       
+        return match_sequence, curr_length, match_rng
 
 
     def get_match_locations(self, original, actual, index):
@@ -257,33 +305,30 @@ class Aligner:
         match_locations = []
         curr_match = (None, None, None)  #(read, ref, len)
 
-
+        print(actual)
         for a,b in zip(original, actual):
-            #print(a, b)
             if a == b:
                 ref_index = self.index_dict[index+ctr]
                 if curr_match[0] == None:
                     curr_match = (ctr, ref_index, 1)
-                    #print(curr_match)
                 elif ref_index - previous != 1:
-                    #print('Jumped intron')
                     match_locations.append(curr_match)
                     curr_match = (ctr, ref_index, 1)
                 else:
-                    #print('Adding 1')
                     curr_match = (curr_match[0], curr_match[1], curr_match[2] + 1)
 
                 previous = ref_index    
 
             else:
-                match_locations.append(curr_match)
+                if curr_match.count(None) == 0:
+                    match_locations.append(curr_match)
                 curr_match = (None, None, None)
 
                 previous = -2
 
             ctr += 1
 
-        if curr_match[0] != None:
+        if curr_match.count(None) == 0:
             match_locations.append(curr_match)
 
         return match_locations    
@@ -310,3 +355,12 @@ class Aligner:
                 transcriptome += '!' #Assuming reads can not span across isoforms so they are seperated with unique char
                 length += 1
         return transcriptome, index_dict
+
+
+
+'''
+Write-up:
+
+I used the bowtie1 technique, searching for matches and backtracking when it gets stuck. 
+
+'''

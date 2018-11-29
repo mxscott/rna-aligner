@@ -19,7 +19,7 @@ def get_suffixes(s):
     """
     suffixes = []
     for i in range(len(s)):
-        suffixes.append((s[i:(i+50)] + '$'*(i), i))
+        suffixes.append((s[i:(i+100)] + '$'*(i), i))
 
     return suffixes
 

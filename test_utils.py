@@ -19,14 +19,14 @@ toy_genes = {gene1, gene2, gene3}
 
 read = 'GATTTCTGAGAAACTTTTTTGTGA'
 
-"""
+'''
 with open('genome.fa') as f:
     f.readline()
     genome = f.readline()
 
 genes = utils.parse_tab_file('genes.tab')
-"""
 
+'''
 start_construct = timer()
 aligner = Aligner(toy_genome, toy_genes)
 end_construct = timer()
